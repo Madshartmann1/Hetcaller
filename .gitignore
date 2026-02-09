@@ -46,3 +46,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Local setup documentation
+GITHUB_SETUP.md
+SETUP_COMPLETE.md
