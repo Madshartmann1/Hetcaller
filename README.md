@@ -30,26 +30,11 @@ Hetcaller is a Snakemake-based pipeline for analyzing heterozygosity and identif
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/Hetcaller.git
+git clone https://github.com/Madshartmann1/Hetcaller.git
 cd Hetcaller
 ```
 
-2. Install Python dependencies:
-```bash
-pip install pyyaml snakemake
-```
-
-3. Install R packages:
-```R
-install.packages(c("ggplot2", "dplyr", "readr", "patchwork", "RColorBrewer"))
-```
-
-4. Install ANGSD (if not already installed):
-```bash
-# Follow instructions at http://www.popgen.dk/angsd/
-```
-
-5. Make hetcall.py executable:
+2. Make hetcall.py executable:
 ```bash
 chmod +x hetcall.py
 ```
@@ -129,15 +114,7 @@ See the `examples/` directory for:
 - `example_bam_list.txt` - Sample BAM list format
 - `example_thresholds.txt` - Sample threshold file
 
-## Citation
-
-If you use Hetcaller in your research, please cite:
-[Add your citation information here]
-
-## License
-
-[Add your license information here]
 
 ## Contact
 
-[Add your contact information here]
+madhar@dtu.dk
