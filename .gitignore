@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Snakemake
+.snakemake/
+
+# Results and data
+results/
+results_*/
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.vcf.gz.csi
+*.fasta
+*.fasta.fai
+*.gz
+*.log
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+Rplots.pdf
+
+# Config files (keep examples)
+config_*.yaml
+!examples/example_config.yaml
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
