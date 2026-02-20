@@ -31,7 +31,7 @@ REGION SPECIFICATION (choose one):
     -f, --rf FILE           Regions file for ANGSD -rf (one scaffold per line)
 
 WORKFLOW OPTIONS:
-    -S, --snakefile FILE    Snakefile path [default: Snakefile]
+    -S, --snakefile FILE    Snakefile path [default: auto-detect from ./ or scripts/]
     -C, --configfile FILE  Config file path [default: config.yaml in current dir]
     -n, --dry-run          Show what would be done without executing
     -u, --unlock           Unlock working directory
@@ -221,8 +221,8 @@ def main():
     
     # Workflow options
     workflow = p.add_argument_group('Workflow options')
-    workflow.add_argument("-S", "--snakefile", default="Snakefile", metavar="FILE",
-                         help="Snakefile path (default: %(default)s)")
+    workflow.add_argument("-S", "--snakefile", metavar="FILE",
+                         help="Snakefile path (default: auto-detected)")
     workflow.add_argument("-C", "--configfile", metavar="FILE",
                          help="Config file path (default: auto-generated)")
     workflow.add_argument("-n", "--dry-run", action="store_true",
@@ -240,6 +240,22 @@ def main():
     if args.help:
         show_help()
         sys.exit(0)
+    
+    # Auto-detect Snakefile location if not specified
+    if not args.snakefile:
+        if os.path.exists("Snakefile"):
+            args.snakefile = "Snakefile"
+        elif os.path.exists(os.path.join(args.scripts, "Snakefile")):
+            args.snakefile = os.path.join(args.scripts, "Snakefile")
+        else:
+            print("Error: Snakefile not found. Searched:", file=sys.stderr)
+            print("  - ./Snakefile", file=sys.stderr)
+            print(f"  - {args.scripts}/Snakefile", file=sys.stderr)
+            print("Specify location with --snakefile or place Snakefile in current directory.", file=sys.stderr)
+            sys.exit(1)
+    elif not os.path.exists(args.snakefile):
+        print(f"Error: Specified Snakefile not found: {args.snakefile}", file=sys.stderr)
+        sys.exit(1)
     
     # Validate single BAM requires prefix
     if args.bam and not args.out_prefix:
