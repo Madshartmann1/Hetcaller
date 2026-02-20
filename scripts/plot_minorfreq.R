@@ -39,12 +39,12 @@ plot_freq_distribution <- function(data, title_prefix = "") {
   p1 <- ggplot(data, aes(x = freq, y = count, fill = pair)) +
     geom_col(position = "stack", alpha = 0.8) +
     scale_fill_brewer(type = "qual", palette = "Set3", name = "Allele Pair") +
-    scale_y_continuous(labels = scales::comma) +
+    scale_y_log10(labels = scales::comma) +
     labs(
       title = paste0(title_prefix, "Minor Allele Frequency Distribution"),
-      subtitle = "Count of sites by frequency and allele pair",
+      subtitle = "Count of sites by frequency and allele pair (log scale)",
       x = "Minor Allele Frequency",
-      y = "Number of Sites"
+      y = "Number of Sites (log scale)"
     ) +
     theme_minimal() +
     theme(
@@ -71,12 +71,12 @@ plot_ti_tv <- function(data, title_prefix = "") {
     geom_col(position = "dodge", alpha = 0.8) +
     scale_fill_manual(values = c("Transition" = "#E31A1C", "Transversion" = "#1F78B4"),
                       name = "Mutation Type") +
-    scale_y_continuous(labels = scales::comma) +
+    scale_y_log10(labels = scales::comma) +
     labs(
       title = paste0(title_prefix, "Transitions vs Transversions"),
       subtitle = paste0("Ti/Tv ratio: ", round(ti_tv_summary$Ti_Tv_ratio, 2)),
       x = "Minor Allele Frequency", 
-      y = "Number of Sites"
+      y = "Number of Sites (log scale)"
     ) +
     theme_minimal() +
     theme(
@@ -100,12 +100,12 @@ plot_pair_comparison <- function(data, title_prefix = "") {
   p3 <- ggplot(pair_summary, aes(x = reorder(pair, total_sites), y = total_sites, fill = pair)) +
     geom_col(alpha = 0.8) +
     scale_fill_brewer(type = "qual", palette = "Set3", guide = "none") +
-    scale_y_continuous(labels = scales::comma) +
+    scale_y_log10(labels = scales::comma) +
     labs(
       title = paste0(title_prefix, "Heterozygous Sites by Allele Pair"),
-      subtitle = "Total count of heterozygous sites for each nucleotide pair",
+      subtitle = "Total count of heterozygous sites for each nucleotide pair (log scale)",
       x = "Allele Pair",
-      y = "Total Sites"
+      y = "Total Sites (log scale)"
     ) +
     theme_minimal() +
     coord_flip()
@@ -215,13 +215,13 @@ compare_samples <- function(minorfreq_files, sample_names = NULL, output_file = 
   p1 <- ggplot(all_data, aes(x = freq, y = count, fill = sample)) +
     geom_col(position = "dodge", alpha = 0.7) +
     scale_fill_brewer(type = "qual", palette = "Set1", name = "Sample") +
-    scale_y_continuous(labels = scales::comma) +
+    scale_y_log10(labels = scales::comma) +
     facet_wrap(~pair, scales = "free_y") +
     labs(
       title = "Minor Allele Frequency Distribution Comparison",
-      subtitle = "Count of sites by frequency across samples",
+      subtitle = "Count of sites by frequency across samples (log scale)",
       x = "Minor Allele Frequency",
-      y = "Number of Sites"
+      y = "Number of Sites (log scale)"
     ) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
