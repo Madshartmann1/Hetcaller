@@ -70,7 +70,7 @@ def count_sites_with_het(file_path, window_size, min_sites, min_proportion):
 
     # Add the count to the dictionary based on the number of consecutive low "HET" windows
     if consecutive_low_het_count > 0:
-        consecutive_low_het_dict[consecutive_low_het_count] = consecutive_low_het_dict.get(consecutive_low_het_count, 0)
+        consecutive_low_het_dict[consecutive_low_het_count] = consecutive_low_het_dict.get(consecutive_low_het_count, 0) + 1
 
     # Print the counts for consecutive low "HET" windows
     print("\nConsecutive low 'HET' windows:")
