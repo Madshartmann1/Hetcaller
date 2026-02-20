@@ -69,9 +69,9 @@ rule all:
     input:
         pos_gz,
         counts_gz,
-        expand(f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt", thresh=THRESHOLDS),
-        expand(f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{ROH_MIN_STR}.ROH.txt",     thresh=THRESHOLDS),
-        expand(f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{ROH_MIN_STR}.ROH_trv.txt", thresh=THRESHOLDS),
+        expand(f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt.gz", thresh=THRESHOLDS),
+        expand(f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{ROH_MIN_STR}.ROH.txt.gz",     thresh=THRESHOLDS),
+        expand(f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{ROH_MIN_STR}.ROH_trv.txt.gz", thresh=THRESHOLDS),
         f"{OUTDIR}/{PREFIX}.minorfreq.txt",
         f"{OUTDIR}/{PREFIX}.minorfreq_AC.txt",
         f"{OUTDIR}/{PREFIX}.minorfreq_AG.txt",
@@ -110,7 +110,7 @@ rule basecall_txt:
         pos = pos_gz,
         counts = counts_gz
     output:
-        txt = f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt"
+        txt = f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt.gz"
     params:
         scripts = SCRIPTS
     shell:
@@ -120,12 +120,12 @@ rule basecall_txt:
           <( zcat "{input.pos}" ) \
           <( cat "{params.scripts}/header.txt"; \
              zcat "{input.counts}" | tail -n +2 | sh "{params.scripts}/Basecall.sh" - {wildcards.thresh} ) \
-          > "{output.txt}"
+          | gzip -c > "{output.txt}"
         """
 
 rule minorfreq:
     input:
-        base=f"{OUTDIR}/{PREFIX}.basecall_{THRESHOLDS[0]}_mincov{MINDEPTH}.txt"
+        base=f"{OUTDIR}/{PREFIX}.basecall_{THRESHOLDS[0]}_mincov{MINDEPTH}.txt.gz"
     output:
         all  = f"{OUTDIR}/{PREFIX}.minorfreq.txt",
         AC   = f"{OUTDIR}/{PREFIX}.minorfreq_AC.txt",
@@ -138,7 +138,7 @@ rule minorfreq:
         r"""
         set -euo pipefail
         # replicate your awk/grep pipeline, one pass
-        grep HET "{input.base}" \
+        zcat "{input.base}" | grep HET \
         | awk '{{split($0, arr); delete arr[1]; delete arr[2]; delete arr[3]; delete arr[8]; asort(arr); print arr[length(arr)-2],$8}}' \
         | sort | uniq -c > "{output.all}"
 
@@ -152,39 +152,51 @@ rule minorfreq:
 
 rule roh:
     input:
-        base = f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt"
+        base = f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt.gz"
     output:
-        txt = f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{config['roh_min']}.ROH.txt"
+        txt = f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{config['roh_min']}.ROH.txt.gz"
     params:
         scripts = SCRIPTS, win = 100000, step = 25000, thr_min = config["roh_min"]
     shell:
         r"""
         set -euo pipefail
-        python "{params.scripts}/ROH.py" "{input.base}" {params.win} {params.step} {params.thr_min} > "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=1{{print $1*$NF}}'  | awk '{{sum+=$1}}END{{print "BP in ROH at least 100kb: "sum*100000}}' >> "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=10{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 1Mb: "sum*100000}}'  >> "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=50{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 5Mb: "sum*100000}}'  >> "{output.txt}"
-        echo "BP analysed $(grep -c Proportion "{output.txt}" | awk '{{print $1*100000}}')" >> "{output.txt}"
-        echo "Genome-wide Heterozygosity $(grep -c HET "{input.base}" | paste - <(wc -l "{input.base}") | awk '{{print $1/($2-1)}}')" >> "{output.txt}"
+        {{
+          zcat "{input.base}" | python "{params.scripts}/ROH.py" /dev/stdin {params.win} {params.step} {params.thr_min}
+        }} > /tmp/roh_$$.txt
+        {{
+          cat /tmp/roh_$$.txt
+          grep "consecutive windows" /tmp/roh_$$.txt | awk '$1>=1{{print $1*$NF}}'  | awk '{{sum+=$1}}END{{print "BP in ROH at least 100kb: "sum*100000}}'
+          grep "consecutive windows" /tmp/roh_$$.txt | awk '$1>=10{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 1Mb: "sum*100000}}'
+          grep "consecutive windows" /tmp/roh_$$.txt | awk '$1>=50{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 5Mb: "sum*100000}}'
+          echo "BP analysed $(grep -c Proportion /tmp/roh_$$.txt | awk '{{print $1*100000}}')"
+          echo "Genome-wide Heterozygosity $(zcat "{input.base}" | grep -c HET | paste - <(zcat "{input.base}" | wc -l) | awk '{{print $1/($2-1)}}')"
+        }} | gzip -c > "{output.txt}"
+        rm -f /tmp/roh_$$.txt
         """
 
 #transcversions only    
 rule roh_trv:
     input:
-        base=f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt"
+        base=f"{OUTDIR}/{PREFIX}.basecall_{{thresh}}_mincov{MINDEPTH}.txt.gz"
     output:
-        txt=f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{config['roh_min']}.ROH_trv.txt"
+        txt=f"{OUTDIR}/{PREFIX}_het{{thresh}}_thres{config['roh_min']}.ROH_trv.txt.gz"
     params:
         scripts=SCRIPTS, win=100000, step=25000, thr_min=config["roh_min"]
     shell:
         r"""
         set -euo pipefail
-        python "{params.scripts}/ROH_trv.py" "{input.base}" {params.win} {params.step} {params.thr_min} > "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=1{{print $1*$NF}}'  | awk '{{sum+=$1}}END{{print "BP in ROH at least 100kb: "sum*100000}}' >> "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=10{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 1Mb: "sum*100000}}'  >> "{output.txt}"
-        grep "consecutive windows" "{output.txt}" | awk '$1>=50{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 5Mb: "sum*100000}}'  >> "{output.txt}"
-        echo "BP analysed $(grep -c Proportion "{output.txt}" | awk '{{print $1*100000}}')" >> "{output.txt}"
-        echo "Genome-wide Heterozygosity $(grep -c HET_trv "{input.base}" | paste - <(wc -l "{input.base}") | awk '{{print $1/($2-1)}}')" >> "{output.txt}"
+        {{
+          zcat "{input.base}" | python "{params.scripts}/ROH_trv.py" /dev/stdin {params.win} {params.step} {params.thr_min}
+        }} > /tmp/roh_trv_$$.txt
+        {{
+          cat /tmp/roh_trv_$$.txt
+          grep "consecutive windows" /tmp/roh_trv_$$.txt | awk '$1>=1{{print $1*$NF}}'  | awk '{{sum+=$1}}END{{print "BP in ROH at least 100kb: "sum*100000}}'
+          grep "consecutive windows" /tmp/roh_trv_$$.txt | awk '$1>=10{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 1Mb: "sum*100000}}'
+          grep "consecutive windows" /tmp/roh_trv_$$.txt | awk '$1>=50{{print $1*$NF}}' | awk '{{sum+=$1}}END{{print "BP in ROH at least 5Mb: "sum*100000}}'
+          echo "BP analysed $(grep -c Proportion /tmp/roh_trv_$$.txt | awk '{{print $1*100000}}')"
+          echo "Genome-wide Heterozygosity $(zcat "{input.base}" | grep -c HET_trv | paste - <(zcat "{input.base}" | wc -l) | awk '{{print $1/($2-1)}}')"
+        }} | gzip -c > "{output.txt}"
+        rm -f /tmp/roh_trv_$$.txt
         """
 
 

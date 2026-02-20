@@ -12,8 +12,8 @@ USAGE:
     hetcall [OPTIONS]
 
 REQUIRED ARGUMENTS:
-    -b, --bam FILE          BAM file for analysis (or use --bam-list)
-    -l, --bam-list FILE     File with BAM paths, one per line (or use --bam)
+    -b, --bam FILE          BAM file for analysis (or use --bam)
+    -l, --bam-list FILE     File with BAM paths, one per line (or use --bam-list)
     -o, --out-prefix STR    Output prefix for all files (ignored if using --bam-list)
 
 OPTIONAL ARGUMENTS:
